@@ -66,6 +66,10 @@ patch: `v0.1.0`, `v0.1.1`, …), so the latest source zip is always available:
 See the [releases page](https://github.com/karutoil/catcode-chatgpt-provider/releases)
 for available versions.
 
+Listed in the Catalyst Code plugin directory via GitHub topics
+`catcode-plugin` + `catalyst-code-plugin`
+([search](https://github.com/search?q=topic%3Acatcode-plugin&type=repositories)).
+
 ### Verify
 
 ```text
