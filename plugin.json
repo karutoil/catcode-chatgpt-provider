@@ -1,0 +1,20 @@
+{
+  "name": "catcode-chatgpt-provider",
+  "version": "0.1.0",
+  "description": "ChatGPT Plus/Pro (Codex) subscription OAuth as a plugin. Uses OpenAI's public Codex OAuth client + device-code flow; catcode owns tools and the agent loop.",
+  "oauth": {
+    "provider_id": "chatgpt",
+    "label": "ChatGPT (Codex)",
+    "kind": "openai",
+    "base_url": "https://chatgpt.com/backend-api/codex",
+    "description": "ChatGPT subscription via Codex backend (device-code OAuth). Install this plugin, then /login chatgpt.",
+    "headers": [
+      ["originator", "codex_cli_rs"],
+      ["User-Agent", "codex_cli_rs/0.0.0 (Linux; x86_64)"]
+    ],
+    "token_path": "chatgpt.json",
+    "script": "oauth/oauth.sh",
+    "login_timeout_ms": 960000,
+    "token_timeout_ms": 30000
+  }
+}

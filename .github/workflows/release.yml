@@ -1,0 +1,80 @@
+name: CI/CD
+
+# On every push to main: validate the plugin, then auto-cut a new
+# (patch-incremented) GitHub Release. On PRs to main: validate only.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write   # the release job creates tags + releases
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate plugin.json
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          d = json.load(open('plugin.json'))
+          assert d.get('name'), 'plugin.json: missing name'
+          assert d.get('version'), 'plugin.json: missing version'
+          oauth = d.get('oauth')
+          assert isinstance(oauth, dict), 'plugin.json: missing oauth block'
+          assert oauth.get('provider_id'), 'oauth: missing provider_id'
+          assert oauth.get('base_url'), 'oauth: missing base_url'
+          assert oauth.get('script'), 'oauth: missing script'
+          script = oauth['script']
+          assert os.path.isfile(script), f'oauth script missing: {script}'
+          assert os.access(script, os.X_OK), f'oauth script not executable: {script}'
+          print(f'plugin.json OK: {d["name"]} v{d["version"]} '
+                f'(oauth provider_id={oauth["provider_id"]!r}, script={script})')
+          PY
+
+      - name: Syntax-check oauth script
+        run: bash -n oauth/oauth.sh
+
+      - name: Smoke test (offline OAuth contract)
+        run: bash scripts/dry-run.sh
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    # Only cut a release on pushes to main (not on PRs).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history + existing tags to compute the next version
+
+      - name: Compute next version (bump patch from the latest v* tag)
+        id: ver
+        run: |
+          set -euo pipefail
+          latest="$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
+          if [ -z "$latest" ]; then
+            next="v0.1.0"
+          else
+            base="${latest#v}"
+            major="${base%%.*}"
+            rest="${base#*.}"
+            minor="${rest%%.*}"
+            patch="${rest##*.}"
+            next="v${major}.${minor}.$((patch + 1))"
+          fi
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+          echo "Previous tag: ${latest:-<none>}"
+          echo "Next release: $next"
+
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generateReleaseNotes: true
+          makeLatest: "true"

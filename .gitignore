@@ -1,0 +1,13 @@
+# Temp / local token smoke files
+*.tmp
+/tmp/
+
+# catcode harness workspace state (todo.json, etc.) — not part of the plugin
+.catalyst-code/
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
